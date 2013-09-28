@@ -10,7 +10,6 @@
 
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);
-extern int wcolor;
 
 // Stupid I/O delay routine necessitated by historical PC design flaws
 static void
@@ -159,6 +158,7 @@ cga_init(void)
 }
 
 
+extern int wcolor;
 
 static void
 cga_putc(int c)
