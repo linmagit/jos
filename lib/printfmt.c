@@ -235,9 +235,9 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			break;
 		
 		// color control
-		case 'c':
-			color = (*((char*)fmt) - '0') * 16 + (*((char*)fmt + 1));
-			fmt += 2;
+		case 'r':
+			wcolor = (*fmt - '0') * 100 + (*(fmt + 1) - '0') * 10 + (*(fmt + 2) - '0');
+			fmt += 3;
 			break;
 
 		// unrecognized escape sequence - just print it literally
