@@ -79,6 +79,8 @@ getint(va_list *ap, int lflag)
 // Main function to format and print a string.
 void printfmt(void (*putch)(int, void*), void *putdat, const char *fmt, ...);
 
+int wcolor = 0;
+
 void
 vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 {
@@ -230,6 +232,12 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		// escaped '%' character
 		case '%':
 			putch(ch, putdat);
+			break;
+		
+		// color control
+		case 'c':
+			color = (*((char*)fmt) - '0') * 16 + (*((char*)fmt + 1));
+			fmt += 2;
 			break;
 
 		// unrecognized escape sequence - just print it literally
