@@ -158,10 +158,13 @@ cga_init(void)
 }
 
 
+extern int wcolor;
 
 static void
 cga_putc(int c)
 {
+	c |= wcolor << 8;	
+
 	// if no attribute given, then use black on white
 	if (!(c & ~0xFF))
 		c |= 0x0700;
