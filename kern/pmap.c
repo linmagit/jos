@@ -99,7 +99,10 @@ boot_alloc(uint32_t n)
 	//
 	// LAB 2: Your code here.
 
-	return NULL;
+	result = ROUNDUP(nextfree, PGSIZE);
+	nextfree = result + n;
+
+	return result;
 }
 
 // Set up a two-level page table:
@@ -121,7 +124,7 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -143,7 +146,8 @@ mem_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
-
+	
+	pages = boot_alloc(sizeof(struct PageInfo) * npages);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -250,7 +254,8 @@ page_init(void)
 	for (i = 0; i < npages; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
-		page_free_list = &pages[i];
+		if (i != 0 && (i < PGNUM(IOPHYSMEM) || i >= PGNUM(boot_alloc(0) - KERNBASE)))
+			page_free_list = &pages[i];
 	}
 }
 
@@ -266,8 +271,12 @@ page_init(void)
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
-	// Fill this function in
-	return 0;
+	if (!page_free_list) return 0;
+	if (alloc_flags & ALLOC_ZERO) memset(page2kva(page_free_list), 0, PGSIZE );
+	struct PageInfo * result = page_free_list;
+	page_free_list = page_free_list->pp_link;
+	
+	return result;
 }
 
 //
@@ -277,7 +286,8 @@ page_alloc(int alloc_flags)
 void
 page_free(struct PageInfo *pp)
 {
-	// Fill this function in
+	pp->pp_link = page_free_list;
+	page_free_list = pp;	
 }
 
 //
