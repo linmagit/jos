@@ -5,6 +5,7 @@
 #include <inc/stdio.h>
 #include <inc/stdarg.h>
 
+extern int wcolor;
 
 static void
 putch(int ch, int *cnt)
@@ -31,6 +32,7 @@ cprintf(const char *fmt, ...)
 	va_start(ap, fmt);
 	cnt = vcprintf(fmt, ap);
 	va_end(ap);
+	wcolor = 0;
 
 	return cnt;
 }
