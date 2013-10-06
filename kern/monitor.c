@@ -6,6 +6,7 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 #include <inc/x86.h>
+#include <kern/pmap.h>
 
 #include <kern/console.h>
 #include <kern/monitor.h>
@@ -24,7 +25,11 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "backtrace", "Display all the outstanding stack frames", mon_backtrace}
+	{ "backtrace", "Display all the outstanding stack frames", mon_backtrace},
+	{ "showmappings", "Display memory mappings", mon_showmappings },
+	{ "setPerm", "Set permission of a vtirual page", setPerm},
+	{ "vvm", "Dump contents of certain virtual memory", vvm},
+	{ "vpm", "Dump contents of certain physical memory", vpm},
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -77,6 +82,102 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+/* convert a string to integer */
+uintptr_t
+convert(char *c) {
+	int res = 0;
+	int base;
+
+	if (c[0] == '0' && c[1] == 'x') {
+		base = 16;
+		c += 2;
+	}
+	else base = 10;
+
+	while (*c) {
+		res *= base;
+		if (*c <= '9') res += *c - '0';
+		else res += *c - 'a' + 10;
+		c++;
+	}
+
+	return res;
+}
+
+/* Display the physical page mappings to a range of virtual address */
+int
+mon_showmappings(int argc, char **argv, struct Trapframe *tf) {
+	if (argc != 3) {
+		cprintf("Usage : showmappings <begin-address> <end-address>\n");
+		return 0;
+	}
+	
+	uintptr_t begin, end, i;
+	pte_t *ptet;
+
+	begin = convert(argv[1]);
+	end = convert(argv[2]);
+	cprintf("Got args: 0x%08x 0x%08x\n", begin, end);
+
+	for (i = begin; i <= end; i += PGSIZE) {
+		ptet = pgdir_walk(kern_pgdir, (void*)i, 1);
+		if (!ptet) {
+			cprintf("Page walk error!\n");
+			return 0;
+		}
+		cprintf("Virtual address : 0x%08x ", i);
+		if (*ptet & PTE_P)
+			cprintf("Physical page : 0x%08x PTE_P %d PTE_U %d PTE_W %d\n",  PTE_ADDR(*ptet), !!(*ptet & PTE_P), !!(*ptet & PTE_U), !!(*ptet & PTE_W));
+		else
+			cprintf("is not mapped!\n");
+
+	}
+
+
+	return 0;
+}
+
+int
+setPerm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc != 3) {
+		cprintf("Usage : setPerm <virtual-address> <permission>");
+		return 0;
+	}
+	pte_t *ptet;
+	ptet = pgdir_walk(kern_pgdir, (void*)convert(argv[1]), 1);
+	*ptet &= ~0xfff;
+	*ptet |= convert(argv[2]);
+	return 0;
+}
+
+int
+vpm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc != 3) {
+		cprintf("Usage : vpm <physical-address> <num>");
+		return 0;
+	}
+
+	int *i;
+	int begin = convert(argv[1]), n = convert(argv[2]);
+	int * p = KADDR(begin);
+	for (i = p; i < p + n; ++i)
+		cprintf("Value of 0x%08x is 0x%08x\n", PADDR(i), *i);
+
+	return 0;
+}
+
+int
+vvm(int argc, char **argv, struct Trapframe *tf) {
+	if (argc != 3) {
+		cprintf("Usage : vpm <virtual-address> <num>");
+		return 0;
+	}
+	int *i;
+	int begin = convert(argv[1]), n = convert(argv[2]);
+	for (i = (int*)begin; i < (int*)begin + n; ++i)
+		cprintf("Value of 0x%08x is 0x%08x\n", i, *i);
+	return 0;
+}
 
 
 /***** Kernel monitor command interpreter *****/
