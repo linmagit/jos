@@ -523,7 +523,7 @@ env_run(struct Env *e)
 		lcr3(PADDR(e->env_pgdir));
 	}
 
-	cprintf("%08x\n", e->env_tf.tf_eip);
+	//cprintf("%08x\n", e->env_tf.tf_eip);
 	env_pop_tf(&e->env_tf);
 
 	panic("env_run not yet implemented");

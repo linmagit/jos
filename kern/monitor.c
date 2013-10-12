@@ -12,6 +12,7 @@
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 #include <kern/trap.h>
+#include <kern/env.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -31,6 +32,7 @@ static struct Command commands[] = {
 	{ "setPerm", "Set permission of a vtirual page", setPerm},
 	{ "vvm", "Dump contents of certain virtual memory", vvm},
 	{ "vpm", "Dump contents of certain physical memory", vpm},
+	{ "continue", "Continue' execution from the current location after break point", bcontinue},
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -177,6 +179,32 @@ vvm(int argc, char **argv, struct Trapframe *tf) {
 	int begin = convert(argv[1]), n = convert(argv[2]);
 	for (i = (int*)begin; i < (int*)begin + n; ++i)
 		cprintf("Value of 0x%08x is 0x%08x\n", i, *i);
+	return 0;
+}
+
+int
+bcontinue(int argc, char **argv, struct Trapframe *tf) {
+	if (!tf) {
+		cprintf("NULL tf in continue!\n");
+		return -1;
+	}
+
+	if (tf->tf_trapno != T_BRKPT && tf->tf_trapno != T_DEBUG) {
+		cprintf("Continue failed!\n");
+		return -1;
+	}
+
+	struct Eipdebuginfo info;
+
+	debuginfo_eip(tf->tf_eip, &info);
+	cprintf("%s:%d: ", info.eip_file , info.eip_line);
+	cprintf("%.*s+", info.eip_fn_namelen, info.eip_fn_name);
+	cprintf("%d", tf->tf_eip - info.eip_fn_addr);
+	cprintf("\n");
+
+	// turn on the single-step mode
+	tf->tf_eflags |= FL_TF;
+	env_run(curenv);
 	return 0;
 }
 

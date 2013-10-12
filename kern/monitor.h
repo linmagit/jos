@@ -19,5 +19,6 @@ int mon_showmappings(int argc, char **argv, struct Trapframe *tf);
 int setPerm(int argc, char **argv, struct Trapframe *tf);
 int vpm(int argc, char **argv, struct Trapframe *tf);
 int vvm(int argc, char **argv, struct Trapframe *tf);
+int bcontinue(int argc, char **argv, struct Trapframe *tf);
 
 #endif	// !JOS_KERN_MONITOR_H
