@@ -192,7 +192,7 @@ env_setup_vm(struct Env *e)
 
 	p->pp_ref++;
 	e->env_pgdir = page2kva(p);
-	memcpy(e->env_pgdir, kern_pgdir, npages * sizeof(pde_t));
+	memmove(e->env_pgdir, kern_pgdir, npages * sizeof(pde_t));
 	memset(e->env_pgdir, 0, PDX(UTOP) * sizeof(pde_t));
 	
 
@@ -346,11 +346,39 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
+	struct Proghdr *ph, *eph;
+	struct Elf * hdr = (struct Elf *)binary;
+
+        // is this a valid ELF?
+	if (hdr->e_magic != ELF_MAGIC)
+		panic("kern/env.c load_icode : invalid ELF!\n");
+
+	// get program header
+	ph = (struct Proghdr *)((uint8_t *) hdr + hdr->e_phoff);
+	eph = ph + hdr->e_phnum;
+
+	// transform cr3 to user pgdir in order to set user environment
+	lcr3(PADDR(e->env_pgdir));
+	//cprintf("reach here!\n");
+
+	for (; ph < eph; ph++) {
+		if (ph->p_type != ELF_PROG_LOAD) continue;
+		void *va = (void *)ph->p_va;
+		// here remember region_alloc will use env_pgdir to map!
+		region_alloc(e, va, ph->p_memsz);
+		memset(va, 0, ph->p_memsz);
+		memmove(va, binary + ph->p_offset, ph->p_filesz);
+	}
+	lcr3(PADDR(kern_pgdir));
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+	region_alloc(e, (void*)USTACKTOP - PGSIZE, PGSIZE);
+
+	// set entry point of the process
+	e->env_tf.tf_eip = hdr->e_entry;
 }
 
 //
@@ -364,6 +392,11 @@ void
 env_create(uint8_t *binary, size_t size, enum EnvType type)
 {
 	// LAB 3: Your code here.
+	struct Env *e;
+	int r;
+
+	if ((r = env_alloc(&e, 0)) < 0) panic("kern/env.c env_create: %e\n", r);
+	load_icode(e, binary, size);
 }
 
 //
@@ -479,6 +512,19 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+
+	// is it a new environment?
+	if (curenv != e) {
+		if (curenv) if (curenv->env_status == ENV_RUNNING)
+			curenv->env_status = ENV_RUNNABLE;
+		curenv = e;
+		e->env_status = ENV_RUNNING;
+		e->env_runs++;
+		lcr3(PADDR(e->env_pgdir));
+	}
+
+	cprintf("%08x\n", e->env_tf.tf_eip);
+	env_pop_tf(&e->env_tf);
 
 	panic("env_run not yet implemented");
 }
