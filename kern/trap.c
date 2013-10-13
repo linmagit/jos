@@ -71,6 +71,9 @@ trap_init(void)
 	for (i = 0; i < 20; i++)
 		SETGATE(idt[i], 0, GD_KT, vectors[i], 0);
 	SETGATE(idt[T_BRKPT], 0, GD_KT, vectors[3], 3);
+	
+	// set IDT for system call
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, vectors[20], 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -149,6 +152,7 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	int eax;
 
 	switch(tf->tf_trapno) {
 	case T_PGFLT:
@@ -157,6 +161,11 @@ trap_dispatch(struct Trapframe *tf)
 	case T_BRKPT:
 		monitor(tf);
 		break;
+	case T_SYSCALL:
+		eax = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+		if (eax < 0) panic("kern/trap.c trap_dispatch: %e\n", eax);
+		tf->tf_regs.reg_eax = eax;
+		return;
 	default:;
 	}
 

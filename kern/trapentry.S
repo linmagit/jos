@@ -78,6 +78,8 @@ vectors:
  TRAPHANDLER_NOEC(vectors18 , T_MCHK); 
  TRAPHANDLER_NOEC(vectors19 , T_SIMDERR); 
 
+ TRAPHANDLER_NOEC(vector_SYS, T_SYSCALL);
+
 
 /*
  * Lab 3: Your code here for _alltraps
