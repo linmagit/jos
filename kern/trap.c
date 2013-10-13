@@ -166,6 +166,7 @@ trap_dispatch(struct Trapframe *tf)
 		if (eax < 0) panic("kern/trap.c trap_dispatch: %e\n", eax);
 		tf->tf_regs.reg_eax = eax;
 		return;
+
 	default:;
 	}
 
@@ -229,6 +230,9 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if (tf->tf_cs == GD_KT) {
+		panic("kern/trap.c page_fault_handler: page fault in kernel!\n");
+	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
