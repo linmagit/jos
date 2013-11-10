@@ -33,6 +33,7 @@ sched_yield(void)
 	int first = -1;
 	int i;
 	if (curenv) first = curenv->env_id;
+	cprintf("%d\n", idle->env_id);
 	
 	for (i = first + 1; i < first + NENV; ++i) {
 		int j = i % NENV;
