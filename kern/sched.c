@@ -30,6 +30,15 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
+	int first = -1;
+	int i;
+	if (curenv) first = curenv->env_id;
+	
+	for (i = first + 1; i < first + NENV; ++i) {
+		int j = i % NENV;
+
+	}
+
 	// sched_halt never returns
 	sched_halt();
 }

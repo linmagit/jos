@@ -550,6 +550,7 @@ env_run(struct Env *e)
 	}
 
 	//cprintf("%08x\n", e->env_tf.tf_eip);
+	unlock_kernel();
 	env_pop_tf(&e->env_tf);
 
 	panic("env_run not yet implemented");
