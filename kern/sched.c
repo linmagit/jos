@@ -36,8 +36,12 @@ sched_yield(void)
 	
 	for (i = first + 1; i < first + NENV; ++i) {
 		int j = i % NENV;
-
+		if (envs[j].env_status != ENV_RUNNABLE)
+			continue;
+		env_run(envs + j);
 	}
+	if (curenv && envs[first].env_status == ENV_RUNNING)
+		env_run(curenv);
 
 	// sched_halt never returns
 	sched_halt();
