@@ -195,13 +195,14 @@ env_setup_vm(struct Env *e)
 
 	p->pp_ref++;
 	e->env_pgdir = page2kva(p);
-	memmove(e->env_pgdir, kern_pgdir, npages * sizeof(pde_t));
+	memmove(e->env_pgdir, kern_pgdir, PGSIZE);
 	memset(e->env_pgdir, 0, PDX(UTOP) * sizeof(pde_t));
 	
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
+	cprintf("%x env pgdir: %x\n", e->env_id, e->env_pgdir);
 
 	return 0;
 }
@@ -409,6 +410,7 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
 
 	if ((r = env_alloc(&e, 0)) < 0) panic("kern/env.c env_create: %e\n", r);
 	load_icode(e, binary, size);
+	e->env_type = type;
 }
 
 //
@@ -546,6 +548,7 @@ env_run(struct Env *e)
 		curenv = e;
 		e->env_status = ENV_RUNNING;
 		e->env_runs++;
+		cprintf("before load cr3: %x\n", e->env_pgdir);
 		lcr3(PADDR(e->env_pgdir));
 	}
 

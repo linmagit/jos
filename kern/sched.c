@@ -30,19 +30,22 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
-	int first = -1;
+	int first = 0;
 	int i;
-	if (curenv) first = curenv->env_id;
-	cprintf("%d\n", idle->env_id);
+	if (curenv) first = ENVX(curenv->env_id);
 	
 	for (i = first + 1; i < first + NENV; ++i) {
 		int j = i % NENV;
 		if (envs[j].env_status != ENV_RUNNABLE)
 			continue;
-		env_run(envs + j);
+		cprintf("%d\n", j);
+		env_run(&envs[j]);
 	}
-	if (curenv && envs[first].env_status == ENV_RUNNING)
+	if (curenv && (curenv->env_status == ENV_RUNNING)) {
+		cprintf("Run previous env: %d\n", first);
 		env_run(curenv);
+	}
+	cprintf("%d\n", curenv->env_status == ENV_RUNNING);
 
 	// sched_halt never returns
 	sched_halt();

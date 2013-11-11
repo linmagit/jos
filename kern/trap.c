@@ -197,6 +197,7 @@ trap_dispatch(struct Trapframe *tf)
 		eax = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
 		if (eax < 0) panic("kern/trap.c trap_dispatch: %e\n", eax);
 		tf->tf_regs.reg_eax = eax;
+		//cprintf("why not return?\n");
 		return;
 
 	default:;
